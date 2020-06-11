@@ -1,5 +1,7 @@
+import os  
 import re
 import requests
+import urllib.request 
 from bs4 import BeautifulSoup as soup #수정가능??
 
 def get_google_image_urls(keyword):
@@ -34,7 +36,16 @@ def download_image(url, filename):
     except:
         return ''
 
+def change_name(new_name):  # img 폴더 이름 변경하는 함수 추가
+    directory = os.listdir('C:\\Users\\User\PycharmProjects\Link_Crawler')
+    os.rename('img', new_name)
+
+
 if __name__ == '__main__':
+    os.mkdir('C:\\Users\\User\PycharmProjects\Link_Crawler\img')  # img 폴더 생성하는 함수 추가
+    search = input('검색어를 입력하세요(쉼표로 구분, 여러 개 가능)')  # 검색어 입력 받는 기능 추가
+    keywords = search.split(',')  # 입력 받은 검색어 리스트 형태로 변환
+
     keywords = ['표정']
     urls = []
     for keyword in keywords:
@@ -43,3 +54,6 @@ if __name__ == '__main__':
         filename = download_image(url, '{:03d}'.format(i))
         if filename:
             print('download {} -> {}'.format(url, filename))
+            urllib.request.urlretrieve(url, './img/' + filename)  # img 폴더에 파일 저장하는 함수 추가
+            
+change_name(search)  # 이미지 저장시킨 폴더의 이름 변경
