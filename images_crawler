@@ -2,7 +2,7 @@ import os
 import re
 import requests
 import urllib.request 
-from bs4 import BeautifulSoup as soup
+from bs4 import BeautifulSoup as soup 
 
 def get_google_image_urls(keyword):
     ptn = re.compile(r'^https?://')
