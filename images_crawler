@@ -4,7 +4,7 @@ import requests
 import urllib.request 
 from bs4 import BeautifulSoup as soup 
 
-def get_google_image_urls(keyword):
+def get_google_image_urls(keyword): #구글에서 검색하기 위해 url주소를 얻는다
     ptn = re.compile(r'^https?://')
     base_url = 'https://www.google.co.kr/search'
     params = {'q': keyword, 'tbm': 'isch'}
@@ -12,14 +12,14 @@ def get_google_image_urls(keyword):
     doc = soup(res.text, 'html.parser')
     return [e.get('src') for e in doc.find_all('img') if ptn.match(e.get('src'))]
 
-def download_image(url, filename):
-    try:
+def download_image(url, filename): #원하는 검색어로 검색된 사진을 저장
+    try: #try문을 통해서 오류가 났을 경우에는 빈 문자열을 반환하도록함
         res = requests.get(url)
         if res.status_code != 200:
             return ''
         type = res.headers['Content-Type']
 
-        ext = ''
+        ext = ''#파일의 확장자에 따라 ext를 변환
         if type == 'image/jpeg':
             ext = '.jpg'
         elif type == 'image/png':
