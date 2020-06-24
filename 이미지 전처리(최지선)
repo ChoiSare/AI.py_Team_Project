@@ -1,0 +1,59 @@
+# 이미지 전처리 코드(최지선 담당)
+import os, re, glob
+from sklearn.model_selection import train_test_split
+# 얼굴인식 xml
+face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+# 눈인식 xml
+eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
+# training image master 경로
+groups_folder_path = 'E:\expression\Bulk-Bing-Image-downloader-master\sad&surprising image'
+# 구분할 이미지의 종류. sad or surprising 이므로 2개 짜리 list
+categories = ["0", "1"]
+num_classes = len(categories)
+# 사진 용량 감소를 위하여 크기를 128*128로 조정
+image_w = 128
+image_h = 128
+  
+X = []
+Y = []
+# 카테고리, 인덱스 라벨링
+for idex, categorie in enumerate(categories):
+    label = [0 for i in range(num_classes)]
+    label[idex] = 1
+    image_dir = groups_folder_path + '/'
+    
+    # image_dir 경로의 모든 파일들에 대하여 작업
+    for top, dir, f in os.walk(image_dir):
+        # 경로내 모든 파일에 대하여
+        for filename in f:
+            print(image_dir+filename)
+            
+            # 파일불러오기
+            img = cv2.imread(image_dir+filename)
+            
+            # 불러온 파일 gray화
+            gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+            # gray 파일 얼굴인식
+            faces = face_cascade.detectMultiScale(gray_img, 1.03, 5)
+            
+            # 인식 된 얼굴이 없으면 작업 넘기기
+            if type(faces) == tuple:
+                continue
+            else:
+              # 얼굴이 하나이면 얼굴부분 잘라내고 리사이즈 한 뒤 list에 추가
+                if faces.shape[0] == 1:
+                    for (x,y,w,h) in faces:
+                        cropped = gray_img[y:y + h, x:x + w]
+                    re_gray = cv2.resize(cropped, None, fx=image_w/cropped.shape[0], fy=image_h/cropped.shape[1])
+                    
+                    # 값을 0~1사이 값으로 표준화
+                    X.append(re_gray/255)
+                    Y.append(label)
+                    
+X = np.array(X)
+Y = np.array(Y)
+# training data와 test data로 분할
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y)
+xy = (X_train, X_test, Y_train, Y_test)
+np.save('E:\expression\Bulk-Bing-Image-downloader-master\sad&surprising\image_data.npy', xy)
