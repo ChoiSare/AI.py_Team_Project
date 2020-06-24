@@ -1,0 +1,97 @@
+import os, re, glob
+from sklearn.model_selection import train_test_split
+
+
+face_cascade = cv2.CascadeClassifier('files/haarcascade_frontalface_default.xml') #cv2에서 제공하는 학습데이터 이용
+
+groups_folder_path = r'C:\Users\myung\Desktop\Bulk-Bing-Image-downloader-master\AF'
+
+categories = ["0", "1"] #2개의 카테고리로 우선 분류
+num_classes = len(categories)
+
+image_w = 128
+image_h = 128
+  
+X = []
+Y = []
+
+for idex, categorie in enumerate(categories): #파일을 라벨링 0과 1로 분류
+    label = [0 for i in range(num_classes)]
+    label[idex] = 1
+    image_dir = groups_folder_path + '/'
+    
+    
+    for top, dir, f in os.walk(image_dir): #디렉토리에 있는 모든 파일을 분류
+        for filename in f:
+            print(image_dir+filename)
+            
+            img = cv2.imread(image_dir+filename)
+            gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+            faces = face_cascade.detectMultiScale(gray_img, 1.03, 5)
+            
+            if type(faces) == tuple:
+                continue
+            else:
+                if faces.shape[0] == 1:
+                    for (x,y,w,h) in faces:
+                        cropped = gray_img[y:y + h, x:x + w] #얼굴부분만을 crop
+                    re_gray = cv2.resize(cropped, None, fx=image_w/cropped.shape[0], fy=image_h/cropped.shape[1])
+                    
+                    #image.resize???
+                    X.append(re_gray/255)
+                    Y.append(label)
+                    
+X = np.array(X)
+Y = np.array(Y)
+
+X_train, X_test, Y_train, Y_test = train_test_split(X,Y)
+xy = (X_train, X_test, Y_train, Y_test)
+
+
+
+from keras.datasets import mnist
+from keras.utils import np_utils
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.callbacks import ModelCheckpoint, EarlyStopping
+from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+import tensorflow as tf
+import os
+
+(X_train, Y_class_train), (X_test, Y_class_test) = mnist.load_data() #데이터를 학습데이터와 훈련데이터로 나눔
+
+X_train = X_train.reshape(X_train.shape[0], 128, 128, 1).astype('float64') / 255 #정규화
+X_test = X_test.reshape(X_test.shape[0], 128, 128, 1).astype('float64') / 255
+Y_train = np_utils.to_categorical(Y_class_train, 10)
+Y_test = np_utils.to_categorical(Y_class_test, 10)
+
+model = Sequential()
+
+model.add(Conv2D(32, kernel_size=(3,3), input_shape = (128, 128, 1), activation = 'relu')) 
+model.add(Conv2D(64, (3, 3), activation = 'relu'))
+model.add(MaxPooling2D(pool_size = 2))
+model.add(Dropout(0.25))
+model.add(Flatten())
+
+model.add(Dense(128, activation = 'relu'))
+model.add(Dropout(0.5))
+model.add(Dense(2, activation = 'softmax'))
+
+model.compile(loss = 'categorical_crossentropy', 
+             optimizer = 'adam',
+             metrics = ['accuracy'])
+MODEL_DIR = './model/'
+if not os.path.exists(MODEL_DIR):
+    os.mkdir(MODEL_DIR)
+    
+modelpath = './model/{epoch:02d}-{val_loss:.4f}.hdf5' #학습한 데이터를 hd5파일로 만든다
+checkpointer = ModelCheckpoint(filepath = modelpath, monitor='val_loss', verbose = 1, save_best_only = True)
+early_stopping_callback = EarlyStopping(monitor = 'val_loss', patience=10)
+
+history = model.fit(X_train, Y_train, validation_data = (X_test, Y_test), 
+                   epochs = 30, batch_size = 200, verbose = 0,
+                   callbacks = [early_stopping_callback, checkpointer])
