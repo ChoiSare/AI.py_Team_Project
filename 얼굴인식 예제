@@ -4,8 +4,8 @@ from keras.preprocessing.image import img_to_array
 from keras.models import load_model
 
 # Face detection XML load and trained model loading
-face_detection = cv2.CascadeClassifier('얼굴인식 학습 파일(아직 정해지지 않음)') 
-emotion_classifier = load_model('표정인식 학습 파일(아직 정해지지 않음)', compile=False)
+face_detection = cv2.CascadeClassifier('files/haarcascade_frontalface_default.xml') #cv2 모듈에서 제공해 주는 fontface를 인식해주는 학습데이터를 이용
+emotion_classifier = load_model('표정인식 학습 파일', compile=False) #학습을 통해서 hd5파일을 생성하지 못하였음
 EMOTIONS = ["Angry" ,"Disgusting","Fearful", "Happy", "Sad", "Surpring", "Neutral"]
 
 camera = cv2.VideoCapture(0)
@@ -16,7 +16,7 @@ while True:
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     
     # Face detection in frame
-    faces = face_detection.detectMultiScale(gray,
+    faces = face_detection.detectMultiScale(gray,           #얼굴 부분을 인식
                                             scaleFactor=1.1,
                                             minNeighbors=5,
                                             minSize=(30,30))
@@ -25,14 +25,14 @@ while True:
     canvas = np.zeros((250, 300, 3), dtype="uint8")
     
     # Perform emotion recognition only when face is detected
-    if len(faces) > 0:
+    if len(faces) > 0: #얼굴이 인식되었다고 판단될 때
         # For the largest image
-        face = sorted(faces, reverse=True, key=lambda x: (x[2] - x[0]) * (x[3] - x[1]))[0]
+        face = sorted(faces, reverse=True, key=lambda x: (x[2] - x[0]) * (x[3] - x[1]))[0] #얼굴이라고 인식된 부분이 위치값을 얻음
         (fX, fY, fW, fH) = face
         # Resize the image to 48x48 for neural network
         roi = gray[fY:fY + fH, fX:fX + fW]
-        roi = cv2.resize(roi, (48, 48))
-        roi = roi.astype("float") / 255.0
+        roi = cv2.resize(roi, (48, 48)) #사진의 크기를 다시 조정해서 전처리
+        roi = roi.astype("float") / 255.0 #정규화
         roi = img_to_array(roi)
         roi = np.expand_dims(roi, axis=0)
         
@@ -46,7 +46,7 @@ while True:
         cv2.rectangle(frame, (fX, fY), (fX + fW, fY + fH), (0, 0, 255), 2)
  
         # Label printing
-        for (i, (emotion, prob)) in enumerate(zip(EMOTIONS, preds)):
+        for (i, (emotion, prob)) in enumerate(zip(EMOTIONS, preds)): #표정의 값을 표현
             text = "{}: {:.2f}%".format(emotion, prob * 100)    
             w = int(prob * 300)
             cv2.rectangle(canvas, (7, (i * 35) + 5), (w, (i * 35) + 35), (0, 0, 255), -1)
