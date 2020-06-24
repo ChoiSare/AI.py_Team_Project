@@ -1,3 +1,4 @@
+#학습모델 구성 - 이명섭
 import os, re, glob
 from sklearn.model_selection import train_test_split
 
